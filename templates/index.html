@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🛡️ Honeypot Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>🛡️ Honeypot Activity Dashboard</h1>
+  <p>Showing latest session logs:</p>
+  <ul>
+    {% for log in sessions %}
+      <li>
+        <a href="/logs/{{ log }}" target="_blank">{{ log }}</a>
+        | <a href="/cast/{{ log.replace('.log', '.cast') }}" target="_blank">🎥 Cast</a>
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
