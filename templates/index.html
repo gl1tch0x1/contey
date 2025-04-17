@@ -2,19 +2,134 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🛡️ Honeypot Dashboard</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+  <!-- Chart.js for Interactive Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SweetAlert2 for Notifications -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-  <h1>🛡️ Honeypot Activity Dashboard</h1>
-  <p>Showing latest session logs:</p>
-  <ul>
-    {% for log in sessions %}
-      <li>
-        <a href="/logs/{{ log }}" target="_blank">{{ log }}</a>
-        | <a href="/cast/{{ log.replace('.log', '.cast') }}" target="_blank">🎥 Cast</a>
-      </li>
-    {% endfor %}
-  </ul>
+  <!-- Main Container -->
+  <div class="container">
+    
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <h1>🛡️ Honeypot Dashboard</h1>
+        <p>Real-time monitoring of honeypot activity and logs</p>
+      </div>
+    </header>
+
+    <!-- Session Stats Section -->
+    <section class="session-stats">
+      <h2>Session Overview</h2>
+      <canvas id="sessionChart"></canvas>
+    </section>
+
+    <!-- Latest Sessions Section -->
+    <section class="session-list">
+      <h2>Latest Session Logs</h2>
+      <ul class="log-items" id="logItems">
+        {% for log in sessions %}
+          <li class="log-item">
+            <div class="log-info">
+              <a href="/logs/{{ log }}" class="log-link" target="_blank">{{ log }}</a>
+              <div class="log-actions">
+                <a href="/cast/{{ log.replace('.log', '.cast') }}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥 Cast</a>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2025 Honeypot Monitoring | <a href="https://github.com/gl1tch0x1" target="_blank">GitHub</a></p>
+    </footer>
+  </div>
+
+  <!-- AJAX Script for Dynamic Updates -->
+  <script>
+    // Function to fetch new logs every 5 seconds (you can adjust this time)
+    function fetchNewLogs() {
+      fetch('/latest_logs')  // Make sure to have a Flask route that returns the latest logs in JSON
+        .then(response => response.json())
+        .then(data => {
+          const logItems = document.getElementById('logItems');
+          logItems.innerHTML = '';  // Clear current log items
+
+          // Add the latest log items
+          data.logs.forEach(log => {
+            const listItem = document.createElement('li');
+            listItem.classList.add('log-item');
+            listItem.innerHTML = `
+              <div class="log-info">
+                <a href="/logs/${log}" class="log-link" target="_blank">${log}</a>
+                <div class="log-actions">
+                  <a href="/cast/${log.replace('.log', '.cast')}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥 Cast</a>
+                </div>
+              </div>
+            `;
+            logItems.appendChild(listItem);
+          });
+        })
+        .catch(error => console.error('Error fetching logs:', error));
+    }
+
+    // Fetch logs every 5 seconds
+    setInterval(fetchNewLogs, 5000);
+
+    // Function to show a notification
+    function showNotification(message) {
+      Swal.fire({
+        title: 'New Log Detected!',
+        text: message,
+        icon: 'info',
+        confirmButtonText: 'Cool',
+      });
+    }
+  </script>
+
+  <!-- Optional: Real-Time Session Chart -->
+  <script>
+    // Data for the session chart
+    const sessionData = {
+      labels: ['Successful Logins', 'Failed Logins'],
+      datasets: [{
+        label: 'Login Attempts',
+        data: [10, 5],  // Replace these numbers with dynamic data from your backend
+        backgroundColor: ['#66d9ef', '#f39c12'],
+        borderColor: ['#66d9ef', '#f39c12'],
+        borderWidth: 1
+      }]
+    };
+
+    const ctx = document.getElementById('sessionChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'pie',  // Pie chart for login stats
+      data: sessionData,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.label + ': ' + context.raw;
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
 </body>
 </html>

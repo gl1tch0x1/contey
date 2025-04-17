@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, jsonify, send_from_directory
 import os
 
 app = Flask(__name__)
@@ -16,6 +16,11 @@ def view_log(filename):
 @app.route('/cast/<filename>')
 def view_cast(filename):
     return send_from_directory(LOG_DIR, filename)
+
+@app.route('/latest_logs')
+def latest_logs():
+    sessions = sorted([f for f in os.listdir(LOG_DIR) if f.endswith(".log")], reverse=True)
+    return jsonify({"logs": sessions})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
