@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +14,11 @@
   <!-- SweetAlert2 for Notifications -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
   <!-- Main Container -->
   <div class="container">
-    
+
     <!-- Header -->
     <header>
       <div class="logo">
@@ -34,8 +36,9 @@
     <!-- Latest Sessions Section -->
     <section class="session-list">
       <h2>Latest Session Logs</h2>
-      <ul class="log-items" id="logItems">
-        {% for log in sessions %}
+      <div id="logContainer">
+        <ul class="log-items" id="logItems">
+          {% for log in sessions %}
           <li class="log-item">
             <div class="log-info">
               <a href="/logs/{{ log }}" class="log-link" target="_blank">{{ log }}</a>
@@ -44,8 +47,10 @@
               </div>
             </div>
           </li>
-        {% endfor %}
-      </ul>
+          {% endfor %}
+        </ul>
+        <p id="noLogsMessage" style="display: none;">No logs available. Check back later!</p>
+      </div>
     </section>
 
     <!-- Footer -->
@@ -62,24 +67,34 @@
         .then(response => response.json())
         .then(data => {
           const logItems = document.getElementById('logItems');
+          const noLogsMessage = document.getElementById('noLogsMessage');
           logItems.innerHTML = '';  // Clear current log items
 
-          // Add the latest log items
-          data.logs.forEach(log => {
-            const listItem = document.createElement('li');
-            listItem.classList.add('log-item');
-            listItem.innerHTML = `
-              <div class="log-info">
-                <a href="/logs/${log}" class="log-link" target="_blank">${log}</a>
-                <div class="log-actions">
-                  <a href="/cast/${log.replace('.log', '.cast')}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥 Cast</a>
+          // Display message if no logs are found
+          if (data.logs.length === 0) {
+            noLogsMessage.style.display = 'block';
+          } else {
+            noLogsMessage.style.display = 'none';
+            // Add the latest log items
+            data.logs.forEach(log => {
+              const listItem = document.createElement('li');
+              listItem.classList.add('log-item');
+              listItem.innerHTML = `
+                <div class="log-info">
+                  <a href="/logs/${log}" class="log-link" target="_blank">${log}</a>
+                  <div class="log-actions">
+                    <a href="/cast/${log.replace('.log', '.cast')}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥 Cast</a>
+                  </div>
                 </div>
-              </div>
-            `;
-            logItems.appendChild(listItem);
-          });
+              `;
+              logItems.appendChild(listItem);
+            });
+          }
         })
-        .catch(error => console.error('Error fetching logs:', error));
+        .catch(error => {
+          console.error('Error fetching logs:', error);
+          showNotification("Error fetching logs. Please try again later.");
+        });
     }
 
     // Fetch logs every 5 seconds
@@ -88,7 +103,7 @@
     // Function to show a notification
     function showNotification(message) {
       Swal.fire({
-        title: 'New Log Detected!',
+        title: 'Notification',
         text: message,
         icon: 'info',
         confirmButtonText: 'Cool',
@@ -98,38 +113,44 @@
 
   <!-- Optional: Real-Time Session Chart -->
   <script>
-    // Data for the session chart
-    const sessionData = {
-      labels: ['Successful Logins', 'Failed Logins'],
-      datasets: [{
-        label: 'Login Attempts',
-        data: [10, 5],  // Replace these numbers with dynamic data from your backend
-        backgroundColor: ['#66d9ef', '#f39c12'],
-        borderColor: ['#66d9ef', '#f39c12'],
-        borderWidth: 1
-      }]
-    };
+    // Fetch session data dynamically (replace with real backend data)
+    fetch('/session_data')
+      .then(response => response.json())
+      .then(data => {
+        const sessionData = {
+          labels: ['Successful Logins', 'Failed Logins'],
+          datasets: [{
+            label: 'Login Attempts',
+            data: [data.successfulLogins, data.failedLogins], // Use actual dynamic data from your backend
+            backgroundColor: ['#66d9ef', '#f39c12'],
+            borderColor: ['#66d9ef', '#f39c12'],
+            borderWidth: 1
+          }]
+        };
 
-    const ctx = document.getElementById('sessionChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'pie',  // Pie chart for login stats
-      data: sessionData,
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return context.label + ': ' + context.raw;
+        const ctx = document.getElementById('sessionChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'pie',  // Pie chart for login stats
+          data: sessionData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: 'top',
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.label + ': ' + context.raw;
+                  }
+                }
               }
             }
           }
-        }
-      }
-    });
+        });
+      })
+      .catch(error => console.error('Error fetching session data:', error));
   </script>
 </body>
+
 </html>

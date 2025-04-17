@@ -1,4 +1,5 @@
 #!/bin/bash
+
 LISTEN_PORT=2222
 LOG_DIR="$HOME/honeypot_logs"
 EMAIL_CONFIG="$HOME/.honeypot_email"
@@ -7,11 +8,11 @@ CSV_FILE="$LOG_DIR/honeypot_logs.csv"
 HTML_FILE="$LOG_DIR/honeypot_logs.html"
 PROJECT_DIR="$HOME/honeypot"
 FLASK_LOG="$LOG_DIR/flask.log"
-RED="\\033[1;31m"
-GREEN="\\033[1;32m"
-CYAN="\\033[1;36m"
-YELLOW="\\033[1;33m"
-RESET="\\033[0m"
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+CYAN="\033[1;36m"
+YELLOW="\033[1;33m"
+RESET="\033[0m"
 REQUIRED_CMDS=(socat msmtp mailx asciinema multitail goaccess figlet lolcat enscript ps2pdf cron python3)
 
 ascii_banner() {
@@ -46,17 +47,19 @@ setup_email() {
 }
 
 configure_cronjob() {
-  cronjob="0 * * * * bash $PROJECT_DIR/email_logs.sh > /dev/null 2>&1"
-  (crontab -l 2>/dev/null | grep -v "email_logs.sh" ; echo "$cronjob") | crontab -
+  cron_marker="# HONEYPOT_EMAIL_JOB"
+  cronjob="0 * * * * bash $PROJECT_DIR/email_logs.sh > /dev/null 2>&1 $cron_marker"
+  (crontab -l 2>/dev/null | grep -v "$cron_marker" ; echo "$cronjob") | crontab -
 }
 
 log_to_csv_html() {
   local log="$1"
   local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
   local ip="$2"
+  mkdir -p "$LOG_DIR/html" "$LOG_DIR/csv"
   while read -r line; do
-    echo "$timestamp,$ip,\"$line\"" >> "$CSV_FILE"
-    echo "<tr><td>$timestamp</td><td>$ip</td><td>$line</td></tr>" >> "$HTML_FILE"
+    echo "$timestamp,$ip,\"$line\"" >> "$LOG_DIR/csv/honeypot_logs.csv"
+    echo "<tr><td>$timestamp</td><td>$ip</td><td>$line</td></tr>" >> "$LOG_DIR/html/honeypot_logs.html"
   done < "$log"
 }
 
@@ -77,20 +80,20 @@ handle_session() {
     read -rs password
     echo
     echo \"[\$(date)] IP: $IP | Login: \$username\" >> '$LOGFILE'
-    if [[ \"\$username\" == \"admin\" && \"\$password\" == \"honeypot\" ]]; then
+    if [[ "\$username" == "admin" && "\$password" == "honeypot" ]]; then
       echo -e '${GREEN}Access Granted${RESET}'
     else
       echo -e '${RED}Access Denied${RESET}'
       exit
     fi
-    echo -e '\\n${CYAN}Welcome to Ubuntu 20.04.6 LTS${RESET}'
+    echo -e '\n${CYAN}Welcome to Ubuntu 20.04.6 LTS${RESET}'
     while true; do
       echo -ne '${GREEN}\$username@honeypot:~\$ ${RESET}'
       read -r cmd
-      timestamp=\$(date +\"%F %T\")
-      echo \"\$timestamp [\$IP] \$cmd\" >> '$LOGFILE'
-      [[ \"\$cmd\" == \"exit\" || \"\$cmd\" == \"logout\" ]] && break
-      case \"\$cmd\" in
+      timestamp=\$(date +"%F %T")
+      echo "\$timestamp [\$IP] \$cmd" >> '$LOGFILE'
+      [[ "\$cmd" == "exit" || "\$cmd" == "logout" ]] && break
+      case "\$cmd" in
         ls) echo -e '${CYAN}Documents  secrets.txt  db.sqlite3${RESET}' ;;
         cat\\ secrets.txt) echo -e '${YELLOW}FAKE_SECRET=123456${RESET}' ;;
         pwd) echo -e '${CYAN}/home/admin${RESET}' ;;
@@ -125,6 +128,7 @@ start_honeypot() {
   done
 }
 
+# Silent setup flag for automation
 if [[ "$1" == "--silent-setup" ]]; then
   install_dependencies
   setup_email
@@ -133,6 +137,7 @@ if [[ "$1" == "--silent-setup" ]]; then
   exit 0
 fi
 
+# Run setup
 install_dependencies
 setup_email
 configure_cronjob
