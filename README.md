@@ -176,7 +176,3 @@ Feel free to fork, clone, or send pull requests. Contributions are welcome!
 ## 📜 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-Let me know if you’d like me to generate this `README.md` file directly for you, or create a downloadable `.zip` package with the entire project structure.
