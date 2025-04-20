@@ -20,6 +20,7 @@ ascii_banner() {
 }
 
 install_dependencies() {
+  echo -e "${YELLOW}Make yourself a coffee☕ and hold on!!...${RESET}"
   echo -e "${YELLOW}Installing dependencies...${RESET}"
   sudo apt-get update -qq
   for cmd in "${REQUIRED_CMDS[@]}"; do
