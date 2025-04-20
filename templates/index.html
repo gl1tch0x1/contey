@@ -2,52 +2,43 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🛡️ Honeypot Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-
-  <!-- Chart.js for Interactive Charts -->
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- SweetAlert2 for Notifications -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
-  <!-- Main Container -->
   <div class="container">
-
     <!-- Header -->
     <header>
-      <div class="logo">
-        <h1>🛡️ Honeypot Dashboard</h1>
-        <p>Real-time monitoring of honeypot activity and logs</p>
-      </div>
+      <h1>🛡️ Honeypot Dashboard</h1>
+      <p class="subtext">Real-time monitoring of honeypot activity and logs</p>
     </header>
 
-    <!-- Session Stats Section -->
-    <section class="session-stats">
+    <!-- Theme Toggle + Refresh Button -->
+    <div class="filter-section">
+      <button onclick="toggleTheme()">🌗 Toggle Theme</button>
+      <button onclick="fetchNewLogs()">🔁 Refresh Logs</button>
+      <input type="text" id="logSearch" placeholder="Search logs...">
+    </div>
+
+    <!-- Chart -->
+    <section class="session-stats chart-container">
       <h2>Session Overview</h2>
       <canvas id="sessionChart"></canvas>
     </section>
 
-    <!-- Latest Sessions Section -->
+    <!-- Log Section -->
     <section class="session-list">
       <h2>Latest Session Logs</h2>
       <div id="logContainer">
         <ul class="log-items" id="logItems">
-          {% for log in sessions %}
-          <li class="log-item">
-            <div class="log-info">
-              <a href="/logs/{{ log }}" class="log-link" target="_blank">{{ log }}</a>
-              <div class="log-actions">
-                <a href="/cast/{{ log.replace('.log', '.cast') }}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥 Cast</a>
-              </div>
-            </div>
-          </li>
-          {% endfor %}
+          <li class="log-item skeleton" id="log-skeleton">Loading logs...</li>
         </ul>
         <p id="noLogsMessage" style="display: none;">No logs available. Check back later!</p>
       </div>
@@ -59,97 +50,112 @@
     </footer>
   </div>
 
-  <!-- AJAX Script for Dynamic Updates -->
+  <!-- JavaScript Enhancements -->
   <script>
-    // Function to fetch new logs every 5 seconds (you can adjust this time)
-    function fetchNewLogs() {
-      fetch('/latest_logs')  // Make sure to have a Flask route that returns the latest logs in JSON
-        .then(response => response.json())
-        .then(data => {
-          const logItems = document.getElementById('logItems');
-          const noLogsMessage = document.getElementById('noLogsMessage');
-          logItems.innerHTML = '';  // Clear current log items
+    let darkMode = true;
 
-          // Display message if no logs are found
+    function toggleTheme() {
+      darkMode = !darkMode;
+      document.body.style.backgroundColor = darkMode ? "#1a1a1a" : "#f4f4f4";
+      document.body.style.color = darkMode ? "#e0e0e0" : "#222";
+      document.querySelector(".container").style.backgroundColor = darkMode ? "#2c2c2c" : "#ffffff";
+    }
+
+    function fetchNewLogs() {
+      const logItems = document.getElementById("logItems");
+      const noLogsMessage = document.getElementById("noLogsMessage");
+      logItems.innerHTML = '<li class="log-item skeleton">Fetching logs...</li>';
+
+      fetch("/latest_logs")
+        .then((response) => response.json())
+        .then((data) => {
+          logItems.innerHTML = "";
           if (data.logs.length === 0) {
-            noLogsMessage.style.display = 'block';
+            noLogsMessage.style.display = "block";
           } else {
-            noLogsMessage.style.display = 'none';
-            // Add the latest log items
-            data.logs.forEach(log => {
-              const listItem = document.createElement('li');
-              listItem.classList.add('log-item');
+            noLogsMessage.style.display = "none";
+
+            data.logs.forEach((log) => {
+              const listItem = document.createElement("li");
+              listItem.classList.add("log-item");
+
               listItem.innerHTML = `
                 <div class="log-info">
                   <a href="/logs/${log}" class="log-link" target="_blank">${log}</a>
-                  <div class="log-actions">
-                    <a href="/cast/${log.replace('.log', '.cast')}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥 Cast</a>
-                  </div>
+                  <span class="log-date">${new Date().toLocaleString()}</span>
+                </div>
+                <div class="log-actions">
+                  <a href="/cast/${log.replace('.log', '.cast')}" class="cast-link" target="_blank" title="Watch Cast 🎥">🎥</a>
+                  <button onclick="copyToClipboard('${log}')" title="Copy Log 📋">📋</button>
                 </div>
               `;
               logItems.appendChild(listItem);
             });
           }
         })
-        .catch(error => {
-          console.error('Error fetching logs:', error);
+        .catch((error) => {
+          console.error("Error fetching logs:", error);
           showNotification("Error fetching logs. Please try again later.");
         });
     }
 
-    // Fetch logs every 5 seconds
-    setInterval(fetchNewLogs, 5000);
-
-    // Function to show a notification
     function showNotification(message) {
       Swal.fire({
-        title: 'Notification',
+        title: "Notification",
         text: message,
-        icon: 'info',
-        confirmButtonText: 'Cool',
+        icon: "info",
+        confirmButtonText: "Got it",
       });
     }
-  </script>
 
-  <!-- Optional: Real-Time Session Chart -->
-  <script>
-    // Fetch session data dynamically (replace with real backend data)
-    fetch('/session_data')
-      .then(response => response.json())
-      .then(data => {
-        const sessionData = {
-          labels: ['Successful Logins', 'Failed Logins'],
-          datasets: [{
-            label: 'Login Attempts',
-            data: [data.successfulLogins, data.failedLogins], // Use actual dynamic data from your backend
-            backgroundColor: ['#66d9ef', '#f39c12'],
-            borderColor: ['#66d9ef', '#f39c12'],
-            borderWidth: 1
-          }]
-        };
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showNotification("Log copied to clipboard.");
+      });
+    }
 
-        const ctx = document.getElementById('sessionChart').getContext('2d');
+    // Search Filtering
+    document.getElementById("logSearch").addEventListener("input", function () {
+      const filter = this.value.toLowerCase();
+      const logItems = document.querySelectorAll(".log-item");
+      logItems.forEach((item) => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(filter) ? "flex" : "none";
+      });
+    });
+
+    // Chart Fetch
+    fetch("/session_data")
+      .then((response) => response.json())
+      .then((data) => {
+        const ctx = document.getElementById("sessionChart").getContext("2d");
         new Chart(ctx, {
-          type: 'pie',  // Pie chart for login stats
-          data: sessionData,
+          type: "pie",
+          data: {
+            labels: ["Successful Logins", "Failed Logins"],
+            datasets: [{
+              data: [data.successfulLogins, data.failedLogins],
+              backgroundColor: ["#66d9ef", "#f39c12"],
+              borderWidth: 1
+            }]
+          },
           options: {
             responsive: true,
             plugins: {
-              legend: {
-                position: 'top',
-              },
+              legend: { position: "top" },
               tooltip: {
                 callbacks: {
-                  label: function(context) {
-                    return context.label + ': ' + context.raw;
-                  }
+                  label: (context) => `${context.label}: ${context.raw}`
                 }
               }
             }
           }
         });
-      })
-      .catch(error => console.error('Error fetching session data:', error));
+      });
+
+    // Start fetch
+    fetchNewLogs();
+    setInterval(fetchNewLogs, 10000); // Auto-refresh every 10s
   </script>
 </body>
 
