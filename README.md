@@ -152,7 +152,7 @@ docker run -d -p 8080:8080 contey
 
 > Real-time interactive chart, sweet UI, live updates every 5s.
 
-<img src="https://raw.githubusercontent.com/gl1tch0x1/contey/main/static/dashboard-preview.png" alt="Dashboard Preview" width="100%"/>
+<img src="static/honeypot-dashboard.PNG" alt="Dashboard Preview" width="90%"/>
 
 ---
 
