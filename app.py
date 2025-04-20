@@ -1,4 +1,5 @@
-from flask import Flask, render_template, jsonify, send_from_directory, abort, safe_join, request, Response, send_file
+from flask import Flask, render_template, jsonify, send_from_directory, abort, request, Response, send_file
+from werkzeug.utils import safe_join
 import os
 import zipfile
 import io
